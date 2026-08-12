@@ -2,83 +2,118 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>7-11 Sales Entry</title>
+  <!-- ไม่ใส่ viewport-fit=cover เพราะจะทำให้เนื้อหาไปอยู่ใต้ติ่ง/แถบสถานะ แล้วหัวฟอร์มถูกตัด -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#f2f2f7">
+  <title>บันทึกยอดขาย</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    :root {
+      /* ความสูง banner ของ Apps Script ที่จะซ่อน
+         0px = ไม่ซ่อน ไม่ตัดอะไรเลย (ค่าเริ่มต้น — ปลอดภัยสุด)
+         ถ้าเห็น banner "This application was created by another user…" ค่อยเปลี่ยนเป็น 40px */
+      --gas-banner: 0px;
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #ffffff;
+      background: #f2f2f7;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
 
     .iframe-wrapper {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
+      inset: 0;
       height: 100vh;
+      height: 100dvh;
       overflow: hidden;
     }
 
-    /* ดึง iframe ขึ้น 40px เพื่อซ่อน banner "This application was created by..." ที่อยู่ด้านบน
-       และเพิ่มความสูง +40px เพื่อให้ content ของฟอร์มเต็มจอ */
     iframe {
       position: absolute;
-      top: -40px;
+      top: calc(var(--gas-banner) * -1);
       left: 0;
       width: 100%;
-      height: calc(100% + 40px);
-      border: none;
+      height: calc(100% + var(--gas-banner));
+      border: 0;
       display: block;
+      background: #f2f2f7;
     }
 
-    /* Loading state ตอนกำลังโหลด iframe */
     .loader {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      font-family: 'Kanit', -apple-system, sans-serif;
-      color: #666;
-      z-index: -1;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: #f2f2f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 15px;
+      color: #8e8e93;
+      z-index: 2;
+      transition: opacity .25s ease;
     }
+    .loader.done { opacity: 0; pointer-events: none; }
 
-    .loader .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #f0f0f0;
-      border-top-color: #ff6b35;
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #e5e5ea;
+      border-top-color: #ff7a00;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 12px;
+      animation: spin .8s linear infinite;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation: none; }
+      .loader  { transition: none; }
     }
   </style>
 </head>
 <body>
-  <div class="loader">
+
+  <div class="loader" id="loader">
     <div class="spinner"></div>
-    <div>กำลังโหลดฟอร์ม...</div>
+    <div>กำลังโหลดฟอร์ม…</div>
   </div>
 
   <div class="iframe-wrapper">
-    <iframe 
+    <iframe
+      id="frame"
       src="https://script.google.com/macros/s/AKfycbzyqIiq66QwcXIE-TYj5s_5FWmWt798nQRw3JIOP6uzQAkVvdI34-Ca42bdjHOtgvkK/exec"
-      title="Sales Entry Form"
+      title="ฟอร์มบันทึกยอดขาย"
       allow="clipboard-write">
     </iframe>
   </div>
+
+  <script>
+    var loader = document.getElementById('loader');
+    function hideLoader() { loader.classList.add('done'); }
+    document.getElementById('frame').addEventListener('load', hideLoader);
+    setTimeout(hideLoader, 8000);
+
+    // กัน double-tap zoom บน iOS Safari ที่ยังไม่เชื่อ touch-action
+    var lastTouch = 0;
+    document.addEventListener('touchend', function (e) {
+      var now = Date.now();
+      if (now - lastTouch <= 300) e.preventDefault();
+      lastTouch = now;
+    }, { passive: false });
+
+    // กันถ่างนิ้วซูมที่หน้าครอบ
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+  </script>
+
 </body>
 </html>
